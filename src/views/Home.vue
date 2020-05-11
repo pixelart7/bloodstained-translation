@@ -26,8 +26,6 @@
 import { ipcRenderer } from 'electron';
 import { defineComponent, ref } from '@vue/composition-api';
 
-import useRouter from '../use/useRouter';
-
 const App = defineComponent({
   setup() {
     const filename = ref('');

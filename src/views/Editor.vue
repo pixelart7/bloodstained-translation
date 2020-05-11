@@ -19,7 +19,22 @@
           template(v-if="currentSize - file.originalSize > 0") +
           | {{currentSize - file.originalSize}}
           | )
-    .flex-1
+    .flex.flex-1.justify-end.items-center.px-2
+      div.text-right.mr-2
+        p.mt-1.px-1.text-white.font-mono.opacity-50.text-xs(v-if="filepath !== ''") {{filepath}}
+        p.px-1.text-white.font-mono.text-xs(v-if="lastSave !== ''") Last saved: {{lastSave.toTimeString()}}
+      div
+        button.px-3.py-1.rounded-lg.bg-gray-200.text-gray-900.transition-colors.duration-200(
+          v-if="filepath === ''"
+          class="hover:bg-gray-300"
+          @click="pickSaveFile"
+        ) Save To...
+        button.px-3.py-1.rounded-lg.bg-gray-200.text-gray-900.transition-colors.transition-opacity.duration-200(
+          v-else
+          class="hover:bg-gray-300"
+          :class="{'pointer-events-none opacity-25': saving}"
+          @click="saveJson"
+        ) Save
   .p-4
     .my-1(v-for="(wp, i) in file.wordPairs")
       .flex
@@ -50,8 +65,9 @@
 
 <script lang="ts">
 import {
-  defineComponent, reactive, computed,
+  defineComponent, reactive, computed, ref, Ref, onMounted,
 } from '@vue/composition-api';
+import { ipcRenderer, IpcMainEvent } from 'electron';
 
 type FileJSON = {
   header: string;
@@ -79,6 +95,9 @@ type FileJSON = {
 
 const Editor = defineComponent({
   setup(props) {
+    const lastSave: Ref<string | Date> = ref('');
+    const saving = ref(false);
+    const filepath = ref('');
     const file = reactive(JSON.parse(props.parsed) as FileJSON);
 
     const currentSize = computed(() => {
@@ -100,7 +119,45 @@ const Editor = defineComponent({
       reComputeSize(index);
     }
 
+    ipcRenderer.on('pick-save-file-reply', (event, arg: any) => {
+      filepath.value = arg;
+    });
+
+    ipcRenderer.on('save-json-reply', () => {
+      saving.value = false;
+      lastSave.value = new Date();
+    });
+
+    ipcRenderer.on('cmd-save', () => {
+      if (filepath.value !== '') {
+        saving.value = true;
+        ipcRenderer.send('save-json', {
+          filepath: filepath.value,
+          file,
+        });
+      }
+    });
+
+    function saveJson() {
+      saving.value = true;
+      ipcRenderer.send('save-json', {
+        filepath: filepath.value,
+        file,
+      });
+    }
+
+    onMounted(() => {
+      document.onkeyup = (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.which === 83) {
+          console.log('save');
+        }
+      };
+    });
+
     return {
+      lastSave,
+      saving,
+      filepath,
       reComputeSize,
       setWordText,
       currentSize,
@@ -109,6 +166,8 @@ const Editor = defineComponent({
         if (group === 2) return (string.match(/.{2}/g) || ['']).join(' ');
         return (string.match(/.{4}/g) || ['']).join(' ');
       },
+      pickSaveFile() { ipcRenderer.send('pick-save-file'); },
+      saveJson,
     };
   },
   props: {

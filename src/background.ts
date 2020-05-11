@@ -1,6 +1,6 @@
 
 import {
-  app, protocol, BrowserWindow, ipcMain,
+  app, protocol, BrowserWindow, ipcMain, globalShortcut, ipcRenderer,
 } from 'electron';
 import {
   createProtocol,
@@ -43,6 +43,17 @@ function createWindow() {
   win.on('closed', () => {
     win = null;
   });
+
+  win.on('focus', () => {
+    globalShortcut.registerAll(['CommandOrControl+R', 'F5'], () => { })
+    globalShortcut.registerAll(['CommandOrControl+S'], () => {
+      (win as any).webContents.send('cmd-save');
+    });
+  })
+
+  win.on('blur', () => {
+    globalShortcut.unregisterAll()
+  })
 }
 
 // Quit when all windows are closed.
@@ -85,6 +96,8 @@ app.on('ready', async () => {
 
   ipcMain.on('pick', tasks.pickFile);
   ipcMain.on('load', taskLoad);
+  ipcMain.on('pick-save-file', tasks.pickSaveFile);
+  ipcMain.on('save-json', tasks.saveJson);
 
   createWindow();
 });
