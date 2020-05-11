@@ -112,6 +112,7 @@ const Editor = defineComponent({
       file.wordPairs[index].word = Buffer
         .from(file.wordPairs[index].wordText, (file.wordPairs[index].encoding === 'ascii') ? 'ascii' : 'utf16le')
         .toString('hex');
+      if (file.wordPairs[index].encoding === 'ascii') file.wordPairs[index].word = `${file.wordPairs[index].word}00`; // not so sure about this but found a lot ASCII with 00 padding
     }
 
     function setWordText(event: Event, index: number) {
