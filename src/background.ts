@@ -1,9 +1,15 @@
 
-import { app, protocol, BrowserWindow } from 'electron';
+import {
+  app, protocol, BrowserWindow, ipcMain,
+} from 'electron';
 import {
   createProtocol,
   /* installVueDevtools */
 } from 'vue-cli-plugin-electron-builder/lib';
+
+import taskInit from './tasks/init';
+import taskLoad from './tasks/load';
+import * as tasks from './tasks/index';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -17,8 +23,8 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { secure: tru
 function createWindow() {
   // Create the browser window.
   win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1280,
+    height: 720,
     webPreferences: {
       nodeIntegration: true,
     },
@@ -74,6 +80,12 @@ app.on('ready', async () => {
     // }
 
   }
+
+  ipcMain.on('init', taskInit);
+
+  ipcMain.on('pick', tasks.pickFile);
+  ipcMain.on('load', taskLoad);
+
   createWindow();
 });
 
